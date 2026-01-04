@@ -161,7 +161,7 @@
 
 <p>B站 iframe（白名单：player.bilibili.com）</p>
 <iframe class="w-player-bilibili"
-  src="//player.bilibili.com/player.html?bvid=BV1J24y1B7T3&autoplay=0"
+  src="https://player.bilibili.com/player.html?bvid=BV1J24y1B7T3&autoplay=0"
   frameborder="0"
   scrolling="no"
   allowfullscreen="allowfullscreen">
@@ -172,8 +172,8 @@
 
 <!--nextpage-->
 
-<!-- ========== 8. 代码与语法高亮 ========== -->
-<h2>代码：inline + code block</h2>
+<!-- ========== 代码与语法高亮 ========== -->
+<h1>代码</h1>
 
 <p>行内代码：<code>npm run dev</code>、<code>const a = 1</code></p>
 
@@ -184,24 +184,24 @@
 </code></pre>
 
 
-<!-- ========== 12. 安全检测：脚本/事件/协议/style ========== -->
-<h2>安全检测：XSS 最小危险集</h2>
+<!-- ========== 安全检测：脚本/事件/协议/style ========== -->
+<h1>安全检测：XSS 最小危险集</h1>
 
-<h3>安全检测1：script 标签（应被移除）</h3>
+<h6>安全检测1：script 标签（应被移除）</h6>
 <script>alert("xss-script-tag")</script>
 
-<h3>安全检测2：on* 事件属性（应被移除）</h3>
+<h6>安全检测2：on* 事件属性（应被移除）</h6>
 <p>
   <img src="x" onerror="alert('xss-onerror')" alt="xss-onerror" />
   <a href="https://example.com" onclick="alert('xss-onclick')">onclick 测试</a>
 </p>
 
-<h3>安全检测3：javascript: 协议（应被置空或移除）</h3>
+<h6>安全检测3：javascript: 协议（应被置空或移除）</h6>
 <p>
   <a href="javascript:alert('xss-js-href')">javascript: href</a>
 </p>
 
-<h3>安全检测4：style 中的 @import / url(（应被清理）</h3>
+<h6>安全检测4：style 中的 @import / url（应被清理）</h6>
 <p style="@import url(https://evil.example.com/x.css); color: red;">@import 测试</p>
 <p style="background-image: url(https://evil.example.com/track.png); padding: 10px; border: 1px solid #ccc;">
   url() 测试（背景图）
@@ -210,8 +210,8 @@
 <!--nextpage-->
 
 
-<!-- ========== 11. 自定义：宏、奇穴、资源块 ========== -->
-<h2>自定义：宏 / 奇穴 / 资源块</h2>
+<!-- ========== 魔盒自定义 ========== -->
+<h1>魔盒自定义</h1>
 
 <pre class="e-jx3macro-area w-jx3macro">/cast [nobuff:虫兽] 灵蛇引
 /cast 蛊虫献祭
@@ -232,21 +232,19 @@
 <div class="e-jx3qixue-area">{"version":"v20240725","xf":"凌海诀","sq":"1,1,1,1","client":"wujie"}</div>
 
 <p>资源插入：</p>
-<p><img class="e-jx3-icon" title="IconID:2588" src="https://console.cnyixun.com/icon/2588.png" /></p>
+<p><img class="e-jx3-icon" title="IconID:2588" src="https://img.jx3box.com/icon/2588.png" /></p>
 
 <pre class="e-jx3-resource"><span class="u-id">ID:551</span>
-  <img class="u-pic" title="IconID:898" src="https://console.cnyixun.com/icon/898.png" />
+  <img class="u-pic" title="IconID:898" src="https://img.jx3box.com/icon/898.png" />
   <span class="u-name">心鼓弦</span>
   <span class="u-desc">救治一个重伤的友方目标，可在战斗中使用。</span>
 </pre>
 
 <hr />
 
-<h2>剑三元素：表情、作者、配装 iframe 预处理占位</h2>
-
 <p>#TT哭泣</p>
 <a data-type="emotion" class="e-jx3-emotion w-jx3-element" data-id="940" target="_blank" href="/emotion/940">
-  <img class="e-jx3-emotion-img" data-type="emotion" data-id="940" style="width:80px;" src="https://console.cnyixun.com/upload/post/2022/6/10/76986_7373574.gif" alt="940" />
+  <img class="e-jx3-emotion-img" data-type="emotion" data-id="940" style="width:80px;" src="https://img.jx3box.com/upload/post/2022/6/10/76986_7373574.gif" alt="940" />
 </a>
 
 <p>

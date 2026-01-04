@@ -11,7 +11,7 @@
             :linkStrict="linkStrict"
 
             :cdnDomain="cdnDomain"
-            :iframeWhitelist='["www.youtube.com", "player.bilibili.com"]'
+            :iframeWhitelist="iframeWhitelist"
         ></ArticleRender>
         <div id="directory"></div>
     </div>
@@ -31,6 +31,8 @@ export default {
             linkStrict: false,
 
             cdnDomain: "https://cdn.2kog.com",
+
+            iframeWhitelist: ["player.bilibili.com"],
         };
     },
     components: {

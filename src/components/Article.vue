@@ -128,7 +128,7 @@ export default {
                 // 过滤内容
                 data = execLazyload(data, this.cdnDomain);
                 data = execFilterIframe(data, this.iframeWhitelist);
-                // data = execFilterXSS(data);
+                data = execFilterXSS(data);
                 data = execFilterLink(data, this.linkWhitelist, this.linkStrict);
                 return data;
             } else {

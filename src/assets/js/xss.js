@@ -2,24 +2,39 @@ import sanitizeHtml from "sanitize-html";
 
 const FORBID = new Set(["script", "object", "embed", "applet", "base", "meta", "link"]);
 
+const EXTRA_TAGS = [
+    "img",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "table", "thead", "tbody", "tr", "th", "td",
+    "blockquote", "pre", "code", "hr",
+    "video", "source",
+    "iframe",
+];
+
 export default function sanitizeRichText(html) {
     if (!html) return html;
 
+    const allowedTags = sanitizeHtml.defaults.allowedTags
+        .concat(EXTRA_TAGS)
+        .filter((t, i, arr) => arr.indexOf(t) === i) // 去重
+        .filter(t => !FORBID.has(t));
+
     return sanitizeHtml(html, {
         disallowedTagsMode: "discard",
-
-        // 关键：标签白名单（在默认基础上禁掉危险标签）
-        allowedTags: sanitizeHtml.defaults.allowedTags.filter(t => !FORBID.has(t)),
+        allowedTags,
 
         allowedAttributes: {
             "*": ["class", "style", "title", "id", "data-*"],
             a: ["href", "target", "rel", "title", "class", "style"],
             img: ["src", "alt", "title", "width", "height", "class", "style", "loading", "decoding"],
+            video: ["controls", "width", "height", "class", "style"],
+            source: ["src", "type"],
+            iframe: ["src","width","height","frameborder","scrolling","allowfullscreen","sandbox","referrerpolicy","class","style"],
         },
 
         allowedSchemes: ["http", "https", "mailto", "tel"],
         allowProtocolRelative: false,
-        allowedSchemesByTag: { img: ["http", "https", "data"] },
+        allowedSchemesByTag: { img: ["http", "https", "data"],iframe: ["http", "https"], },
 
         transformTags: {
             "*": (tagName, attribs) => {
@@ -28,7 +43,7 @@ export default function sanitizeRichText(html) {
                 // 移除 on*
                 for (const k of Object.keys(out)) if (/^on/i.test(k)) delete out[k];
 
-                // 清理 style 里的 @import / url(
+                // style 禁 @import / url(
                 if (typeof out.style === "string" && out.style) {
                     let s = out.style;
                     s = s.replace(/@import\s+[^;]+;?/gi, "");
