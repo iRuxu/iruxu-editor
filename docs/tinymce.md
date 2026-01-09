@@ -9,6 +9,7 @@ $path-to/static/tinymce/skins/content/default/content.min.css
 ## Usage
 ```js
 <script src="path/to/static/tinymce/tinymce.min.js"></script>
+window.RX_TINYMCE_ROOT=$path-to
 import Tinymce from 'iruxu-editor/src/components/Tinymce.vue
 
 <Tinymce

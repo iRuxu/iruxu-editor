@@ -4,56 +4,60 @@ import 'katex/dist/katex.min.css';
 
 function renderKatexBlock(selector = ".w-latex") {
     try {
-        // eslint-disable-next-line no-unused-vars
-        $(selector).each(function(i, ele) {
-            let $katex = $(this);
+        $(selector).each(function() {
+            const $katex = $(this);
 
-            // 获取原始HTML内容
+            // 避免重复渲染
+            if ($katex.data('katex-rendered')) return;
+
             let raw = $katex.html();
 
-            // 处理各种换行组合：
-            // 1. \\<br /> 或 \\<br> -> \\
-            raw = raw.replace(/\\\\\s*<br\s*\/?>/gi, '\\\\');
-            // 2. \<br /> 或 \<br> -> \\
-            raw = raw.replace(/\\\s*<br\s*\/?>/gi, '\\\\');
-            // 3. 单独的 <br /> -> \\
-            raw = raw.replace(/<br\s*\/?>/gi, '\\\\');
+            // 统一处理换行符
+            raw = raw
+                .replace(/\\\\\s*<br\s*\/?>/gi, '\\\\')
+                .replace(/\\\s*<br\s*\/?>/gi, '\\\\')
+                .replace(/<br\s*\/?>/gi, '\\\\')
+                .replace(/<[^>]+>/g, '');
 
-            // 移除其他HTML标签但保留内容
-            raw = raw.replace(/<[^>]+>/g, '');
+            // 解码HTML实体
+            raw = $('<div>').html(raw).text().trim();
 
-            // 解码HTML实体（如 &nbsp; -> 空格）
-            raw = $('<div>').html(raw).text();
-
-            // 清理多余的空白字符
-            raw = raw.trim();
-
-            console.log('Original HTML:', $katex.html());
-            console.log('Processed LaTeX:', raw);
-
-            katex.render(raw, $katex.get(0), { displayMode: true });
+            try {
+                katex.render(raw, $katex.get(0), {
+                    displayMode: true,
+                    throwOnError: false,
+                    strict: false
+                });
+                $katex.data('katex-rendered', true);
+            } catch (e) {
+                console.error('KaTeX render error:', e.message, raw);
+            }
         });
     } catch (e) {
-        console.error('KaTeX render error:', e);
-        console.error('Failed content:', $(this).html());
+        console.error('KaTeX block render error:', e);
     }
 }
 
 function renderKatexInline(container = document.body) {
-    // 支持 \(...\) 和 $...$ 两种行内语法
-    // 改进正则表达式，更好地匹配单美元符号
-    const inlineRegex = /(\\\((.+?)\\\)|\$([^$]+?)\$)/g;
+    // 改进的正则：不匹配换行符，支持转义
+    const inlineRegex = /(?<!\\)(\\\((.+?)\\\)|(?<!\\)\$([^\n$]+?)(?<!\\)\$)/g;
 
     const walker = document.createTreeWalker(
         container,
         NodeFilter.SHOW_TEXT,
         {
             acceptNode: function (node) {
+                // 跳过已渲染的节点
                 if (
                     node.parentNode &&
-                    !node.parentNode.closest("pre") &&
-                    (node.nodeValue.includes("\\(") || node.nodeValue.includes("$"))
+                    (node.parentNode.classList?.contains('katex') ||
+                     node.parentNode.closest("pre, code, .katex"))
                 ) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+
+                const value = node.nodeValue || '';
+                if (value.includes("\\(") || value.includes("$")) {
                     return NodeFilter.FILTER_ACCEPT;
                 }
                 return NodeFilter.FILTER_REJECT;
@@ -66,35 +70,32 @@ function renderKatexInline(container = document.body) {
         nodesToReplace.push(walker.currentNode);
     }
 
-    console.log('Inline processing nodes:', nodesToReplace.length);
-
     nodesToReplace.forEach((node) => {
         const text = node.nodeValue;
         const frag = document.createDocumentFragment();
         let lastIndex = 0;
-        let match;
 
-        console.log('Processing text:', text);
+        // 重置正则状态
+        inlineRegex.lastIndex = 0;
 
-        while ((match = inlineRegex.exec(text))) {
+        const matches = [...text.matchAll(inlineRegex)];
+
+        matches.forEach((match) => {
             const fullMatch = match[0];
-            const parenContent = match[2]; // \(...\)的内容
-            const dollarContent = match[3]; // $...$的内容
+            const parenContent = match[2];
+            const dollarContent = match[3];
             const raw = parenContent || dollarContent;
             const matchStart = match.index;
 
-            console.log('Found inline match:', fullMatch, 'Raw:', raw);
-
-            // 添加匹配前文本
-            frag.appendChild(document.createTextNode(text.slice(lastIndex, matchStart)));
+            // 添加匹配前的文本
+            if (matchStart > lastIndex) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex, matchStart)));
+            }
 
             try {
                 const span = document.createElement("span");
-                // 处理JavaScript字符串中的双反斜杠转义
-                const processedRaw = raw.replace(/\\\\/g, '\\');
-                console.log('Rendering inline:', processedRaw);
-                // 添加更多选项确保正确渲染
-                span.innerHTML = katex.renderToString(processedRaw, {
+                span.className = "katex-inline";
+                span.innerHTML = katex.renderToString(raw, {
                     displayMode: false,
                     throwOnError: false,
                     strict: false,
@@ -103,13 +104,13 @@ function renderKatexInline(container = document.body) {
                 frag.appendChild(span);
             } catch (e) {
                 frag.appendChild(document.createTextNode(fullMatch));
-                console.error("Inline render error:", raw, e);
+                console.error("Inline render error:", raw, e.message);
             }
 
-            lastIndex = inlineRegex.lastIndex;
-        }
+            lastIndex = matchStart + fullMatch.length;
+        });
 
-        // 剩余文本
+        // 添加剩余文本
         if (lastIndex < text.length) {
             frag.appendChild(document.createTextNode(text.slice(lastIndex)));
         }
@@ -121,19 +122,25 @@ function renderKatexInline(container = document.body) {
 }
 
 function renderKatexDisplayBlock(container = document.body) {
-    // 支持 $$...$$ 和 \[...\] 两种块语法
-    const blockRegex = /(\$\$\s*([\s\S]+?)\s*\$\$|\\\[\s*([\s\S]+?)\s*\\\])/g;
+    // 使用非贪婪匹配，允许多行但不跨过多段落
+    const blockRegex = /(?<!\\)(\$\$([\s\S]+?)\$\$|(?<!\\)\\\[([\s\S]+?)\\\])/g;
 
     const walker = document.createTreeWalker(
         container,
         NodeFilter.SHOW_TEXT,
         {
             acceptNode: function (node) {
+                // 跳过已渲染的节点
                 if (
                     node.parentNode &&
-                    !node.parentNode.closest("pre") &&
-                    (node.nodeValue.includes("$$") || node.nodeValue.includes("\\["))
+                    (node.parentNode.classList?.contains('katex') ||
+                     node.parentNode.closest("pre, code, .katex"))
                 ) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+
+                const value = node.nodeValue || '';
+                if (value.includes("$$") || value.includes("\\[")) {
                     return NodeFilter.FILTER_ACCEPT;
                 }
                 return NodeFilter.FILTER_REJECT;
@@ -150,38 +157,50 @@ function renderKatexDisplayBlock(container = document.body) {
         const text = node.nodeValue;
         const frag = document.createDocumentFragment();
         let lastIndex = 0;
-        let match;
 
-        while ((match = blockRegex.exec(text))) {
+        // 重置正则状态
+        blockRegex.lastIndex = 0;
+
+        const matches = [...text.matchAll(blockRegex)];
+
+        matches.forEach((match) => {
             const fullMatch = match[0];
-            const dollarContent = match[2]; // $$...$$的内容
-            const bracketContent = match[3]; // \[...\]的内容
-            const raw = dollarContent || bracketContent;
+            const dollarContent = match[2];
+            const bracketContent = match[3];
+            const raw = (dollarContent || bracketContent).trim();
             const matchStart = match.index;
 
-            // 添加匹配前文本
-            frag.appendChild(document.createTextNode(text.slice(lastIndex, matchStart)));
+            // 添加匹配前的文本
+            if (matchStart > lastIndex) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex, matchStart)));
+            }
 
             try {
                 const div = document.createElement("div");
-                // 处理JavaScript字符串中的双反斜杠转义
-                const processedRaw = raw.replace(/\\\\/g, '\\');
-                div.innerHTML = katex.renderToString(processedRaw, { displayMode: true });
+                div.className = "katex-block";
+                div.innerHTML = katex.renderToString(raw, {
+                    displayMode: true,
+                    throwOnError: false,
+                    strict: false,
+                    trust: true
+                });
                 frag.appendChild(div);
             } catch (e) {
                 frag.appendChild(document.createTextNode(fullMatch));
-                console.error("Block render error:", raw, e);
+                console.error("Block render error:", raw, e.message);
             }
 
-            lastIndex = blockRegex.lastIndex;
-        }
+            lastIndex = matchStart + fullMatch.length;
+        });
 
         // 添加剩余文本
         if (lastIndex < text.length) {
             frag.appendChild(document.createTextNode(text.slice(lastIndex)));
         }
 
-        node.parentNode.replaceChild(frag, node);
+        if (frag.hasChildNodes()) {
+            node.parentNode.replaceChild(frag, node);
+        }
     });
 }
 
