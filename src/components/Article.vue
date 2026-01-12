@@ -125,11 +125,18 @@ export default {
     methods: {
         doReg: function (data) {
             if (data) {
-                // 过滤内容
-                data = execLazyload(data, this.cdnDomain);
-                data = execFilterIframe(data, this.iframeWhitelist);
+                // 1. 先执行 XSS 过滤（xss.js 已包含所有配置）
                 data = execFilterXSS(data);
+
+                // 2. 然后执行 iframe 白名单过滤
+                data = execFilterIframe(data, this.iframeWhitelist);
+
+                // 3. 处理图片懒加载
+                data = execLazyload(data, this.cdnDomain);
+
+                // 4. 最后处理链接
                 data = execFilterLink(data, this.linkWhitelist, this.linkStrict);
+
                 return data;
             } else {
                 return "";

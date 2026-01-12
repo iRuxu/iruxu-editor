@@ -33,7 +33,7 @@ export default function sanitizeRichText(html) {
         },
 
         allowedSchemes: ["http", "https", "mailto", "tel"],
-        allowProtocolRelative: false,
+        allowProtocolRelative: true,
         allowedSchemesByTag: { img: ["http", "https", "data"],iframe: ["http", "https"], },
 
         transformTags: {
